@@ -12,41 +12,13 @@ build:
         name: Maven install
         code: mvn install
 
-push-dockerhub:
-  steps:
-    # Push to public docker repo
-    - internal/docker-push:
-        username: $DOCKERHUB_USERNAME
-        password: $DOCKERHUB_PASSWORD
-        tag: latest
-        repository: $DOCKERHUB_REPOSITORY
-        registry: https://index.docker.io/v1/
-        cmd: java -jar  /pipeline/source/target/loan-0.1.0.war
+
 push:
   steps:
     # Push to public docker repo Container Registry (CR)
     - internal/docker-push:
         tag: $WERCKER_GIT_BRANCH-$WERCKER_GIT_COMMIT
-        repository: wcr.io/$WERCKER_APPLICATION_OWNER_NAME/creditscoreapp
         cmd: java -jar  /pipeline/source/target/loan-0.1.0.war
-
-inject-secret:
-  box:
-        id: alpine
-        cmd: /bin/sh
-  steps:
-    - kubectl:
-        name: delete secret
-        server: $KUBERNETES_MASTER
-        token: $KUBERNETES_TOKEN
-        insecure-skip-tls-verify: true
-        command: delete secret wrelease -n=$WERCKER_APPLICATION_OWNER_NAME; echo delete registry secret
-    - kubectl:
-        name: create secret
-        server: $KUBERNETES_MASTER
-        token: $KUBERNETES_TOKEN
-        insecure-skip-tls-verify: true
-        command: create secret docker-registry wrelease --docker-server=wcr.io --docker-username=$WERCKER_APPLICATION_OWNER_NAME --docker-password=$DOCKER_PASSWORD --docker-email=$DOCKER_EMAIL -n=$WERCKER_APPLICATION_OWNER_NAME
 
 deploy-to-cluster:
   box:
@@ -54,6 +26,12 @@ deploy-to-cluster:
         cmd: /bin/sh
   steps:
     - bash-template
+
+    - script:
+        name: "Visualise Kubernetes config"
+        code: cat kubernetes.yml
+
+
     - kubectl:
         server: $KUBERNETES_MASTER
         token: $KUBERNETES_TOKEN
@@ -72,7 +50,7 @@ deploy-to-cluster:
         server: $KUBERNETES_MASTER
         token: $KUBERNETES_TOKEN
         insecure-skip-tls-verify: true
-        command: create secret docker-registry wrelease --docker-server=wcr.io --docker-username=$WERCKER_APPLICATION_OWNER_NAME --docker-password=$DOCKER_PASSWORD --docker-email=${WERCKER_APPLICATION_OWNER_NAME}@mail.com --namespace=$WERCKER_APPLICATION_OWNER_NAME
+        command: create secret docker-registry wrelease --docker-server=wcr.io --docker-username=$WERCKER_APPLICATION_OWNER_NAME --docker-password=$KUBERNETES_TOKEN --docker-email=${WERCKER_APPLICATION_OWNER_NAME}@mail.com --namespace=$WERCKER_APPLICATION_OWNER_NAME
     - kubectl:
         server: $KUBERNETES_MASTER
         token: $KUBERNETES_TOKEN
@@ -100,9 +78,3 @@ testapp:
                   echo "Test failed"
                   exit -1
               fi
-restart:
-  steps:
-    # Restart Docker on OCCS using webhook
-    - script:
-        name: curl POST
-        code: curl -k -X POST $DEPLOYMENT_WEBHOOK
