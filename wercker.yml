@@ -29,7 +29,7 @@ deploy-to-cluster:
 
     - script:
         name: "Visualise Kubernetes config"
-        code: cat kubernetes.yml
+        code: cat kubernetes-deployment.yml
 
 
     - kubectl:
