@@ -32,6 +32,8 @@ deploy-to-cluster:
         code: cat kubernetes-deployment.yml
 
     - kubectl:
+        name: delete namespace
+    
         server: $KUBERNETES_MASTER
         token: $KUBERNETES_TOKEN
         insecure-skip-tls-verify: true
@@ -42,6 +44,8 @@ deploy-to-cluster:
         code: sleep 30
         
     - kubectl:
+
+        name: create namespace    
         server: $KUBERNETES_MASTER
         token: $KUBERNETES_TOKEN
         insecure-skip-tls-verify: true
@@ -55,6 +59,8 @@ deploy-to-cluster:
         command: create secret docker-registry wrelease --docker-server=wcr.io --docker-username=$WERCKER_APPLICATION_OWNER_NAME --docker-password=$KUBERNETES_TOKEN --docker-email=${WERCKER_APPLICATION_OWNER_NAME}@mail.com --namespace=$WERCKER_APPLICATION_OWNER_NAME
         
     - kubectl:
+        name: create deployment
+    
         server: $KUBERNETES_MASTER
         token: $KUBERNETES_TOKEN
         insecure-skip-tls-verify: true
@@ -65,6 +71,8 @@ deploy-to-cluster:
         code: cat ingress.yml
 
     - kubectl:
+        name: create Ingres configuration
+    
         server: $KUBERNETES_MASTER
         token: $KUBERNETES_TOKEN
         insecure-skip-tls-verify: true
